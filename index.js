@@ -6,18 +6,6 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-const products = [
-  { id: 1, name: "laptop", price: 100 },
-  { id: 2, name: "phone", price: 500 },
-  { id: 3, name: "MacBook", price: 1500 },
-]
-
-
-
-// app.get('/products' , (req, res) =>{
-//     res.send(products)
-// })
-
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = process.env.DB_URI;
@@ -41,11 +29,24 @@ async function server() {
     const db = client.db("study-nook");
     const detailsCollection = db.collection("details")
 
-    app.get("/details", async (req, res) => {
-      const cursor = detailsCollection.find();
-      const result = await cursor.toArray();
-      // console.log(result);
+    // app.get("/details", async (req, res) => {
+    //   const cursor = detailsCollection.find();
+    //   const result = await cursor.toArray();
+    //   // console.log(result);
 
+    //   res.send(result);
+    // });
+
+    // //  sorting 
+    app.get("/details", async (req, res) => {
+      const limit = parseInt(req.query.limit);
+
+      let query = detailsCollection.find().sort({ _id: -1 });
+      if (limit) {
+        query = query.limit(limit);
+      }
+      const result = await query.toArray();
+      console.log(result);
       res.send(result);
     });
 
@@ -69,13 +70,28 @@ async function server() {
       console.log(result);
     });
 
-    app.delete("/details/:detailId", async(req, res) => {
-        const detailId = req.params.detailId;
-        // console.log(detailId);
-        const query = { _id: new ObjectId(detailId) };
-        const result = await detailsCollection.deleteOne(query);
-        // console.log(result);
-        res.send(result);
+    app.patch("/details/:detailId", async (req, res) => {
+      const { detailId } = req.params;
+      const updatedData = req.body;
+      // console.log(detailId , updatedData);
+      const filter = { _id: new ObjectId(detailId) };
+      const updatedDoc = {
+        $set: {
+          ...updatedData
+        },
+      };
+      const result = await detailsCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+      console.log(result);
+    });
+
+    app.delete("/details/:detailId", async (req, res) => {
+      const detailId = req.params.detailId;
+      // console.log(detailId);
+      const query = { _id: new ObjectId(detailId) };
+      const result = await detailsCollection.deleteOne(query);
+      // console.log(result);
+      res.send(result);
     })
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
