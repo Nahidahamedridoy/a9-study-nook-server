@@ -28,15 +28,74 @@ async function server() {
 
     const db = client.db("study-nook");
     const detailsCollection = db.collection("details")
-    const bookingCollection =db.collection("bookings")
+    const bookingCollection = db.collection("bookings")
 
-    // app.get("/details", async (req, res) => {
-    //   const cursor = detailsCollection.find();
-    //   const result = await cursor.toArray();
-    //   // console.log(result);
 
-    //   res.send(result);
-    // });
+    //search
+app.get("/details", async (req, res) => {
+
+  const search = req.query.search;
+
+  const amenities = req.query.amenities;
+
+  const minPrice = parseInt(req.query.minPrice);
+
+  const maxPrice = parseInt(req.query.maxPrice);
+
+  const limit = parseInt(req.query.limit);
+
+  let query = {};
+
+  // Search
+  if (search) {
+
+    query.roomName = {
+      $regex: search,
+      $options: "i",
+    };
+
+  }
+
+  // Amenities
+  if (amenities) {
+
+    query.amenities = {
+      $in: amenities.split(","),
+    };
+
+  }
+
+  // Price Range
+  if (minPrice || maxPrice) {
+
+    query.hourlyRate = {};
+
+    if (minPrice) {
+      query.hourlyRate.$gte = minPrice;
+    }
+
+    if (maxPrice) {
+      query.hourlyRate.$lte = maxPrice;
+    }
+
+  }
+
+  // Mongo Query
+  let cursor = detailsCollection
+    .find(query)
+    .sort({ _id: -1 });
+
+  // Limit
+  if (limit) {
+
+    cursor = cursor.limit(limit);
+
+  }
+
+  const result = await cursor.toArray();
+
+  res.send(result);
+});
 
     // //  sorting 
     app.get("/details", async (req, res) => {
@@ -95,23 +154,49 @@ async function server() {
       res.send(result);
     });
 
-    app.get("/booking/:userId" , async(req, res) =>{
-      const {userId} = req.params
+    app.get("/booking/:userId", async (req, res) => {
+      const { userId } = req.params
 
-      const result = await bookingCollection.find({userId:userId}).toArray();
+      const result = await bookingCollection.find({ userId: userId }).toArray();
       res.json(result)
     })
 
-    app.post("/booking" , async(req , res) =>{
-      const bookingData = req.body;
-      const result = await bookingCollection.insertOne(bookingData)
+    app.post("/booking", async (req, res) => {
+      try {
+        const bookingData = req.body;
 
-      res.json(result);
-    })
+        const existingBooking = await bookingCollection.findOne({
+          roomId: bookingData.roomId,
+          bookingDate: bookingData.bookingDate,
+          bookingTime: bookingData.bookingTime,
+        });
 
-    app.delete("/booking/:bookingId" , async(req, res) =>{
-      const {bookingId} = req.params;
-      const result = await bookingCollection.deleteOne({_id: new ObjectId(bookingId)})
+        if (existingBooking) {
+          return res.status(409).json({
+            success: false,
+            message: "this room are already booked",
+          });
+        }
+
+        const result = await bookingCollection.insertOne(bookingData);
+
+        res.status(201).json({
+          success: true,
+          message: "booking successful",
+          insertedId: result.insertedId,
+        });
+
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          message: error.message,
+        });
+      }
+    });
+
+    app.delete("/booking/:bookingId", async (req, res) => {
+      const { bookingId } = req.params;
+      const result = await bookingCollection.deleteOne({ _id: new ObjectId(bookingId) })
 
       res.json(result)
     })
