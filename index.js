@@ -28,6 +28,7 @@ async function server() {
 
     const db = client.db("study-nook");
     const detailsCollection = db.collection("details")
+    const bookingCollection =db.collection("bookings")
 
     // app.get("/details", async (req, res) => {
     //   const cursor = detailsCollection.find();
@@ -92,6 +93,27 @@ async function server() {
       const result = await detailsCollection.deleteOne(query);
       // console.log(result);
       res.send(result);
+    });
+
+    app.get("/booking/:userId" , async(req, res) =>{
+      const {userId} = req.params
+
+      const result = await bookingCollection.find({userId:userId}).toArray();
+      res.json(result)
+    })
+
+    app.post("/booking" , async(req , res) =>{
+      const bookingData = req.body;
+      const result = await bookingCollection.insertOne(bookingData)
+
+      res.json(result);
+    })
+
+    app.delete("/booking/:bookingId" , async(req, res) =>{
+      const {bookingId} = req.params;
+      const result = await bookingCollection.deleteOne({_id: new ObjectId(bookingId)})
+
+      res.json(result)
     })
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
