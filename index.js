@@ -32,70 +32,70 @@ async function server() {
 
 
     //search
-app.get("/details", async (req, res) => {
+    app.get("/details", async (req, res) => {
 
-  const search = req.query.search;
+      const search = req.query.search;
 
-  const amenities = req.query.amenities;
+      const amenities = req.query.amenities;
 
-  const minPrice = parseInt(req.query.minPrice);
+      const minPrice = parseInt(req.query.minPrice);
 
-  const maxPrice = parseInt(req.query.maxPrice);
+      const maxPrice = parseInt(req.query.maxPrice);
 
-  const limit = parseInt(req.query.limit);
+      const limit = parseInt(req.query.limit);
 
-  let query = {};
+      let query = {};
 
-  // Search
-  if (search) {
+      // Search
+      if (search) {
 
-    query.roomName = {
-      $regex: search,
-      $options: "i",
-    };
+        query.roomName = {
+          $regex: search,
+          $options: "i",
+        };
 
-  }
+      }
 
-  // Amenities
-  if (amenities) {
+      // Amenities
+      if (amenities) {
 
-    query.amenities = {
-      $in: amenities.split(","),
-    };
+        query.amenities = {
+          $in: amenities.split(","),
+        };
 
-  }
+      }
 
-  // Price Range
-  if (minPrice || maxPrice) {
+      // Price Range
+      if (minPrice || maxPrice) {
 
-    query.hourlyRate = {};
+        query.hourlyRate = {};
 
-    if (minPrice) {
-      query.hourlyRate.$gte = minPrice;
-    }
+        if (minPrice) {
+          query.hourlyRate.$gte = minPrice;
+        }
 
-    if (maxPrice) {
-      query.hourlyRate.$lte = maxPrice;
-    }
+        if (maxPrice) {
+          query.hourlyRate.$lte = maxPrice;
+        }
 
-  }
+      }
 
-  // Mongo Query
-  let cursor = detailsCollection
-    .find(query)
-    .sort({ _id: -1 });
+      // Mongo Query
+      let cursor = detailsCollection
+        .find(query)
+        .sort({ _id: -1 });
 
-  // Limit
-  if (limit) {
+      // Limit
+      if (limit) {
 
-    cursor = cursor.limit(limit);
+        cursor = cursor.limit(limit);
 
-  }
+      }
 
-  const result = await cursor.toArray();
+      const result = await cursor.toArray();
 
-  res.send(result);
-});
+      res.send(result);
+    });
 
     // //  sorting 
     app.get("/details", async (req, res) => {
@@ -110,7 +110,15 @@ app.get("/details", async (req, res) => {
       res.send(result);
     });
 
-    app.get("/details/:detailId", async (req, res) => {
+    //middleWare
+    app.get("/details/:detailId", (req , res ,next) =>{
+      const header = req.headers.authorization
+      // console.log(header);
+      console.log(header);
+        next()
+
+
+    }, async (req, res) => {
       const detailId = req.params.detailId;
 
       const query = { _id: new ObjectId(detailId) }
