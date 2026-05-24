@@ -35,7 +35,7 @@ const verifyToken = async(req, res, next) => {
   if (!token) {
     return res.status(401).json({ message: "unauthorized" });
   }
-
+  console.log(token);
   try {
     const { payload } = await jwtVerify(token, JWKS)
     console.log({payload});
@@ -150,9 +150,9 @@ async function server() {
       res.send(result)
     });
 
-    app.post("/details",  async (req, res) => {
+    app.post("/details", verifyToken, async (req, res) => {
       // add details
-      // console.log(req.body , "form body");
+      console.log(req.body , "form body");
       const newDetails = req.body;
       const result = await detailsCollection.insertOne(newDetails);
       res.send(result)
