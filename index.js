@@ -8,6 +8,7 @@ app.use(express.json());
 
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { createRemoteJWKSet, jwtVerify } = require('jose-cjs');
 const uri = process.env.DB_URI;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -18,6 +19,33 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
+
+const JWKS = createRemoteJWKSet(
+  new URL("http://localhost:3000/api/auth/jwks")
+)
+
+const verifyToken = async(req, res, next) => {
+  const authHeader = req?.headers.authorization
+  if (!authHeader) {
+    return res.status(401).json({ message: "unauthorized" });
+  }
+  // console.log(authHeader);
+  const token = authHeader.split(" ")[1]
+
+  if (!token) {
+    return res.status(401).json({ message: "unauthorized" });
+  }
+
+  try {
+    const { payload } = await jwtVerify(token, JWKS)
+    console.log({payload});
+    next()
+  } catch (error) {
+    console.log(error);
+    return res.status(403).json({message:"Forbidden"});
+  }
+
+};
 
 async function server() {
   try {
@@ -111,14 +139,7 @@ async function server() {
     });
 
     //middleWare
-    app.get("/details/:detailId", (req , res ,next) =>{
-      const header = req.headers.authorization
-      // console.log(header);
-      console.log(header);
-        next()
-
-
-    }, async (req, res) => {
+    app.get("/details/:detailId", verifyToken, async (req, res) => {
       const detailId = req.params.detailId;
 
       const query = { _id: new ObjectId(detailId) }
@@ -129,7 +150,7 @@ async function server() {
       res.send(result)
     });
 
-    app.post("/details", async (req, res) => {
+    app.post("/details",  async (req, res) => {
       // add details
       // console.log(req.body , "form body");
       const newDetails = req.body;
@@ -153,7 +174,7 @@ async function server() {
       console.log(result);
     });
 
-    app.delete("/details/:detailId", async (req, res) => {
+    app.delete("/details/:detailId", verifyToken, async (req, res) => {
       const detailId = req.params.detailId;
       // console.log(detailId);
       const query = { _id: new ObjectId(detailId) };
