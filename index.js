@@ -21,7 +21,7 @@ const client = new MongoClient(uri, {
 });
 
 const JWKS = createRemoteJWKSet(
-  new URL("http://localhost:3000/api/auth/jwks")
+  new URL(`${process.env.CLIENT_URL}/api/auth/jwks`)
 )
 
 const verifyToken = async(req, res, next) => {
@@ -49,8 +49,8 @@ const verifyToken = async(req, res, next) => {
 
 async function server() {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    
+    // await client.connect();
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
 
@@ -176,7 +176,7 @@ async function server() {
 
     app.delete("/details/:detailId", verifyToken, async (req, res) => {
       const detailId = req.params.detailId;
-      // console.log(detailId);
+      console.log(detailId);
       const query = { _id: new ObjectId(detailId) };
       const result = await detailsCollection.deleteOne(query);
       // console.log(result);
@@ -190,7 +190,7 @@ async function server() {
       res.json(result)
     })
 
-    app.post("/booking", async (req, res) => {
+    app.post("/booking", verifyToken, async (req, res) => {
       try {
         const bookingData = req.body;
 
@@ -241,7 +241,7 @@ server().catch(console.dir);
 
 
 app.get('/', (req, res) => {
-  res.send('Hello , this is my first server!');
+  res.send('Hello , this is my Study Nook Server!');
 });
 
 app.listen(port, () => {
